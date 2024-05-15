@@ -4,8 +4,8 @@
 //			//
 //////////////////////////
 
-// Partner 1: (your name here), (Student ID here)
-// Partner 2: (your name here), (Student ID here)
+// Partner 1: Rana Singh, A17545784
+// Partner 2: Niharika Trivedi, (Student ID here)
 
 //////////////////////////
 //			//
@@ -13,27 +13,68 @@
 //                    	//
 //////////////////////////
 
-main:	lda x4, symbol
-	ldur x0, [x4, #0]
-	bl FindTail
-	addi x2, x1, #24
-	stur x2, [sp, #0]
-	bl Partition
-	ldur x0, [sp, #0]
-	lda x5, encode
-	ldur x1, [x5, #0]
-CheckSymbol:
-	ldur x2, [x1, #0]
-	subs xzr, x2, xzr
-	b.ge KeepEncode
-	stop
+// Tests FindMidpoint (and FindTail)
+main:	
+    // Allocate space on the stack
+    SUBI SP, SP, #40       // Increase stack space to accommodate additional variables
+    // Push old frame pointer onto the stack
+    STUR FP, [SP, #0]
+    // Set frame pointer
+    ADDI FP, SP, #32
+    // Push link register onto stack
+    STUR LR, [FP, #0]
 
-KeepEncode:
-	stur x1, [sp, #0]
-	bl Encode
-	ldur x1, [sp, #0]
-	addi x1, x1, #8
-	b CheckSymbol
+    // Load initial symbol array address
+    LDA x4, symbol
+    LDUR x0, [x4, #0]      // x0 is the head (first symbol)
+	STUR x0, [SP, #8]      // Store original head address on stack
+    bl FindTail            // Call FindTail to get the last symbol address in x1
+	LDUR x0, [SP, #8]      // Load original head address from stack after FindTail call
+    STUR x1, [SP, #16]     // Store original tail address on stack
+    STUR x2, [SP, #24]     // Store original left sum on stack
+    STUR x3, [SP, #32]     // Store original right sum on stack
+
+    // Call FindMidpoint
+    bl FindMidpoint
+    putint x4              // Print the address returned in x4 which points to the start of the right sub-array
+
+    // Restore the original values from the stack
+    LDUR x0, [SP, #8]      // Restore head address
+    LDUR x1, [SP, #16]     // Restore tail address
+    LDUR x2, [SP, #24]     // Restore left sum
+    LDUR x3, [SP, #32]     // Restore right sum
+
+    // Restore Link Register and old frame pointer from Stack
+    LDUR lr, [fp, #0]
+    LDUR fp, [sp, #0]
+    // Pop the stack
+    ADDI sp, sp, #40
+    stop
+
+
+// main code for testing FindTail only
+// main:	
+// 	// Allocate space on the stack
+//     SUBI SP, SP, #24
+//     // Push old frame pointer onto the stack
+//     STUR FP, [SP, #0]
+//     // Set frame pointer
+//     ADDI FP, SP, #16
+//     // Push link register onto stack
+//     STUR LR, [FP, #0]
+// 	LDA x4, symbol
+// 	LDUR x0, [x4, #0]
+// 	STUR X0, [SP, #8]
+// 	bl FindTail
+// 	LDUR X0, [SP, #8]
+// 	// Restore Link Register and old frame pointer from Stack
+// 	putint X1 // print the tail address
+//     LDUR LR, [FP, #0]
+//     LDUR FP, [SP, #0]
+//     // Pop the stack
+//     ADDI SP, SP, #24
+// 	STOP
+
 
 	
 ////////////////////////
@@ -45,9 +86,34 @@ FindTail:
 	// input:
 	// x0: address of (pointer to) the first symbol of symbol array
 	// output:
-	// x1: address of (pointer to) the first symbol of symbol array
+	// x1: address of (pointer to) the last symbol of symbol array
+	// Allocate space on the stack
+    SUBI SP, SP, #24
+    // Push old frame pointer onto the stack
+    STUR FP, [SP, #0]
+    // Set frame pointer
+    ADDI FP, SP, #16
+    // Push link register onto stack
+    STUR LR, [FP, #0]
+	// Save callee-saved X19 value on stack
+	STUR X19, [SP, #8]
+repeat:
+	LDUR X19, [X0, #16] // store the address of the next symbol
+	ADDI X19, X19, #1 // check if the next symbol is -1
+	CBZ X19, endFindTail // if so, end the loop
+	ADDI X0, X0, #16 // otherwise, move to the next symbol
+	B repeat
 
-	br lr
+endFindTail:
+	ADD X1, X0, XZR // Save the address of the last symbol
+	// Restore callee-saved X19 value from stack
+	LDUR X19, [SP, #8]
+    // Restore Link Register and old frame pointer from Stack
+    LDUR LR, [FP, #0]
+    LDUR FP, [SP, #0]
+    // Pop the stack
+    ADDI SP, SP, #24
+    BR LR
 
 
 ////////////////////////
@@ -64,8 +130,47 @@ FindMidpoint:
 	
 	// output:
 	// x4: address of (pointer to) the first element of the right-hand side sub-array
+	// Allocate space on the stack
+    SUBI SP, SP, #32
+    // Push old frame pointer onto the stack
+    STUR FP, [SP, #0]
+    // Set frame pointer
+    ADDI FP, SP, #24
+    // Push link register onto stack
+    STUR LR, [FP, #0]
+	// Save callee-saved X19, X20 values on stack
+	STUR X19, [SP, #8]
+	STUR X20, [SP, #16]
+
+	LDUR X2, [X0, #8] // store the sum of the frequency of the left sub-array
+	LDUR X3, [X1, #8] // store the sum of the frequency of the right sub-array
+midPointLoop:
+	ADDI X19, X0, #16 // check if head + 2 == tail
+	SUBS XZR, X19, X1
+	B.EQ endFindMidpoint
+	SUBS XZR, X2, X3 // check left_sum <= right_sum
+	B.GT else // if left_sum > right_sum, go to else condition
+	ADDI X0, X0, #16 // move head to the next symbol
+	LDUR X20, [X0, #8] // store the sum of the frequency of the left sub-array
+	ADD X2, X2, X20 // update left_sum
+	B midPointLoop
+else:
+	SUBI X1, X1, #16 // move tail to the previous symbol
+	LDUR X20, [X1, #8] // store the sum of the frequency of the right sub-array
+	ADD X3, X3, X20 // update right_sum
+	B midPointLoop
 	
-	br lr
+endFindMidpoint:
+	ADD X4, X1, XZR // Save the address of the last symbol
+	// Restore callee-saved X19, X20 values from stack
+	LDUR X19, [SP, #8]
+	LDUR X20, [SP, #16]
+    // Restore Link Register and old frame pointer from Stack
+    LDUR LR, [FP, #0]
+    LDUR FP, [SP, #0]
+    // Pop the stack
+    ADDI SP, SP, #32
+    BR LR
 
 
 ////////////////////////
