@@ -184,8 +184,84 @@ Partition:
 	// x1: address of (pointer to) the last symbol of the symbol array
 	// x2: address of the first attribute of the current binary tree node
 	
-	br lr
+    // Allocate space on the stack
+    SUBI SP, SP, #40
+    // Push old frame pointer onto the stack
+    STUR FP, [SP, #0]
+    // Set frame pointer
+    ADDI FP, SP, #32
+    // Push link register onto stack
+    STUR LR, [FP, #-8]
+    // Save callee-saved registers X19, X20, X21, X22 on stack
+    STUR X19, [SP, #8]
+    STUR X20, [SP, #16]
+    STUR X21, [SP, #24]
+    STUR X22, [SP, #32]
 
+    // Store start ptr and end ptr in the node
+    STUR X0, [X2, #0]   // ∗node ← start
+    STUR X1, [X2, #8]   // ∗(node + 1) ← end
+
+    // Check if start == end
+    SUB X19, X0, X1
+    CBNZ X19, ElsePartition //If start =/= end, jump to ElsePartition
+
+    // If condition: set left and right pointers to NULL (-1)
+    SUBI X19, XZR, #1  // NULL = (-1)
+    STUR X19, [X2, #16] // ∗(node + 2) ← NULL
+    STUR X19, [X2, #24] // ∗(node + 3) ← NULL
+    B endPartition
+
+ElsePartition:
+    // Calculate left_sum and right_sum
+    LDUR X19, [X0, #8]  // left_sum = *(start + 1)
+    LDUR X20, [X1, #8]  // right_sum = *(end + 1)
+
+    // Setting arguments and calling FindMidpoint
+    ADD X0, X0, XZR  // start
+    ADD X1, X1, XZR  // end
+    ADD X5, X19, XZR  // left_sum
+    ADD X6, X20, XZR  // right_sum 
+    BL FindMidpoint
+    // Result (midpoint value) stored in X4 
+
+    SUB X21, X4, X0  // Calculating (midpoint - start)
+    SUBI X21, X21, #1 // offset = (midpoint - start) – 1
+
+    // Calculate left and right nodes
+    ADDI X19, X2, #32    // left_node = node + 4
+    LSL X22, X21, #2      // offset*4
+    ADD X20, X19, X22    // right_node = left_node + offset * 4
+
+    // Store left and right node pointers
+    STUR X19, [X2, #16]  // ∗(node + 2) ← left node
+    STUR X20, [X2, #24]  // ∗(node + 3) ← right nodes
+
+
+    // Setting arguments for first recursive call
+    ADD X5, X0, XZR     // start 
+    SUBI X6, X4, #2     // midpoint - 2
+    ADD X7, X19, XZR    // left_node 
+    BL Partition	// first recursive call
+
+    // Setting arguments for second recursive call
+    ADD X5, X4, XZR      // midpoint
+    ADD X6, X1, XZR      // end
+    ADD X7, X20, XZR     // right_node
+    BL Partition	 // second recursive call
+
+endPartition:
+    // Restore callee-saved registers X19, X20, X21, X22 from stack
+    LDUR X19, [SP, #8]
+    LDUR X20, [SP, #16]
+    LDUR X21, [SP, #24]
+    LDUR X22, [SP, #32]
+    // Restore Link Register and old frame pointer from Stack
+    LDUR LR, [FP, #-8]
+    LDUR FP, [SP, #0]
+    // Pop the stack
+    ADDI SP, SP, #40
+    BR LR
 	
 ////////////////////////
 //                    //
