@@ -191,7 +191,7 @@ Partition:
     // Set frame pointer
     ADDI FP, SP, #32
     // Push link register onto stack
-    STUR LR, [FP, #-8]
+    STUR LR, [FP, #0]
     // Save callee-saved registers X19, X20, X21, X22 on stack
     STUR X19, [SP, #8]
     STUR X20, [SP, #16]
@@ -257,7 +257,7 @@ endPartition:
     LDUR X21, [SP, #24]
     LDUR X22, [SP, #32]
     // Restore Link Register and old frame pointer from Stack
-    LDUR LR, [FP, #-8]
+    LDUR LR, [FP, #0]
     LDUR FP, [SP, #0]
     // Pop the stack
     ADDI SP, SP, #40
