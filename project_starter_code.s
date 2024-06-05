@@ -5,7 +5,7 @@
 //////////////////////////
 
 // Partner 1: Rana Singh, A17545784
-// Partner 2: Niharika Trivedi, (Student ID here)
+// Partner 2: Niharika Trivedi, A17940857
 
 //////////////////////////
 //			//
@@ -340,7 +340,7 @@ Encode:
 
     SUB X21, X19, X20 // Checking if left node = right node
     CBNZ X21, ifEncode // If left node =/= right node, jump to ifEncode
-    B endEncode          // If left node == right node, end the function
+    B endEncode   // If left node == right node, end the function
 
 ifEncode:
     LDUR X21, [X19, #0]   // Loading (left node) = start
@@ -360,15 +360,15 @@ PrintZero:
     PUTINT XZR // Prints zero
     ADD X0, X19, XZR  // Setting argument (node) as left node for Encode recursion
     ADD X2, X2, XZR // Setting argument (symbol) for Encode recursion
-    BL Encode         // Encode recursion with left node and symbol as arguments
-    B endEncode       // End the function
+    BL Encode   // Encode recursion with left node and symbol as arguments
+    B endEncode   // End the function
 
 PrintOne:
     ADDI X4, XZR, #1 // Saving 1 in X4 (to be printed)
     PUTINT X4  // Prints 1
     ADD X0, X20, XZR  // Setting argument (node) for Encode recursion
     ADD X2, X2, XZR // Setting argument (symbol) for Encode recursion
-    BL Encode         // Encode recursion with right node and symbol as arguments
+    BL Encode   // Encode recursion with right node and symbol as arguments
 
 endEncode:
     // Restore callee-saved registers X19, X20, X21, X22 from stack
