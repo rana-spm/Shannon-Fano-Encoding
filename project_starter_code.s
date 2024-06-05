@@ -14,66 +14,66 @@
 //////////////////////////
 
 // Tests IsContain (and FindTail)
-main:	
-    // Allocate space on the stack
-    SUBI SP, SP, #40       // Increase stack space to accommodate additional variables
-    // Push old frame pointer onto the stack
-    STUR FP, [SP, #0]
-    // Set frame pointer
-    ADDI FP, SP, #32
-    // Push link register onto stack
-    STUR LR, [FP, #0]
-
-    // Load initial symbol array address
-    LDA x4, symbol
-    LDUR x0, [x4, #0]      // x0 is the head (first symbol)
-	STUR x0, [SP, #8]      // Store original head address on stack
-    bl FindTail            // Call FindTail to get the last symbol address in x1
-	LDUR x0, [SP, #8]      // Load original head address from stack after FindTail call
-    STUR x1, [SP, #16]     // Store original tail address on stack
-    STUR x2, [SP, #24]     // Store original left sum on stack
-    STUR x3, [SP, #32]     // Store original right sum on stack
-    ADDI X2, XZR, #9
-    // Call IsContain
-    bl IsContain
-    putint x3              
-
-    // Restore the original values from the stack
-    LDUR x0, [SP, #8]      // Restore head address
-    LDUR x1, [SP, #16]     // Restore tail address
-    LDUR x2, [SP, #24]     // Restore left sum
-    LDUR x3, [SP, #32]     // Restore right sum
-
-    // Restore Link Register and old frame pointer from Stack
-    LDUR lr, [fp, #0]
-    LDUR fp, [sp, #0]
-    // Pop the stack
-    ADDI sp, sp, #40
-    stop
-
-
-// main code for testing FindTail only
 // main:	
-// 	// Allocate space on the stack
-//     SUBI SP, SP, #24
+//     // Allocate space on the stack
+//     SUBI SP, SP, #40       // Increase stack space to accommodate additional variables
 //     // Push old frame pointer onto the stack
 //     STUR FP, [SP, #0]
 //     // Set frame pointer
-//     ADDI FP, SP, #16
+//     ADDI FP, SP, #32
 //     // Push link register onto stack
 //     STUR LR, [FP, #0]
-// 	LDA x4, symbol
-// 	LDUR x0, [x4, #0]
-// 	STUR X0, [SP, #8]
-// 	bl FindTail
-// 	LDUR X0, [SP, #8]
-// 	// Restore Link Register and old frame pointer from Stack
-// 	putint X1 // print the tail address
-//     LDUR LR, [FP, #0]
-//     LDUR FP, [SP, #0]
+
+//     // Load initial symbol array address
+//     LDA x4, symbol
+//     LDUR x0, [x4, #0]      // x0 is the head (first symbol)
+// 	STUR x0, [SP, #8]      // Store original head address on stack
+//     bl FindTail            // Call FindTail to get the last symbol address in x1
+// 	LDUR x0, [SP, #8]      // Load original head address from stack after FindTail call
+//     STUR x1, [SP, #16]     // Store original tail address on stack
+//     STUR x2, [SP, #24]     // Store original left sum on stack
+//     STUR x3, [SP, #32]     // Store original right sum on stack
+//     ADDI X2, XZR, #9
+//     // Call IsContain
+//     bl IsContain
+//     putint x3              
+
+//     // Restore the original values from the stack
+//     LDUR x0, [SP, #8]      // Restore head address
+//     LDUR x1, [SP, #16]     // Restore tail address
+//     LDUR x2, [SP, #24]     // Restore left sum
+//     LDUR x3, [SP, #32]     // Restore right sum
+
+//     // Restore Link Register and old frame pointer from Stack
+//     LDUR lr, [fp, #0]
+//     LDUR fp, [sp, #0]
 //     // Pop the stack
-//     ADDI SP, SP, #24
-// 	STOP
+//     ADDI sp, sp, #40
+//     stop
+
+
+// main code for testing FindTail only
+main:	
+	// Allocate space on the stack
+    SUBI SP, SP, #24
+    // Push old frame pointer onto the stack
+    STUR FP, [SP, #0]
+    // Set frame pointer
+    ADDI FP, SP, #16
+    // Push link register onto stack
+    STUR LR, [FP, #0]
+	LDA x4, symbol
+	LDUR x0, [x4, #0]
+	STUR X0, [SP, #8]
+	bl FindTail
+	LDUR X0, [SP, #8]
+	// Restore Link Register and old frame pointer from Stack
+	putint X1 // print the tail address
+    LDUR LR, [FP, #0]
+    LDUR FP, [SP, #0]
+    // Pop the stack
+    ADDI SP, SP, #24
+	STOP
 
 
 	
@@ -87,33 +87,25 @@ FindTail:
 	// x0: address of (pointer to) the first symbol of symbol array
 	// output:
 	// x1: address of (pointer to) the last symbol of symbol array
-	// Allocate space on the stack
-    SUBI SP, SP, #24
-    // Push old frame pointer onto the stack
-    STUR FP, [SP, #0]
-    // Set frame pointer
-    ADDI FP, SP, #16
-    // Push link register onto stack
-    STUR LR, [FP, #0]
-	// Save callee-saved X19 value on stack
-	STUR X19, [SP, #8]
-repeat:
-	LDUR X19, [X0, #16] // store the address of the next symbol
-	ADDI X19, X19, #1 // check if the next symbol is -1
+	SUBI SP, SP, #24   // Allocate space on the stack
+    STUR FP, [SP, #0]  // Push old frame pointer onto the stack
+    ADDI FP, SP, #16   // Set frame pointer
+    STUR LR, [FP, #0]  // Push link register onto stack
+    STUR X19, [SP, #8] // Save callee-saved X19 value on stack
+
+	LDUR X19, [X0, #16]  // store the address of the next symbol
+	ADDI X19, X19, #1    // check if the next symbol is -1
 	CBZ X19, endFindTail // if so, end the loop
-	ADDI X0, X0, #16 // otherwise, move to the next symbol
-	B repeat
+	ADDI X0, X0, #16     // otherwise, move to the next symbol
+	B FindTail
 
 endFindTail:
-	ADD X1, X0, XZR // Save the address of the last symbol
-	// Restore callee-saved X19 value from stack
-	LDUR X19, [SP, #8]
-    // Restore Link Register and old frame pointer from Stack
-    LDUR LR, [FP, #0]
-    LDUR FP, [SP, #0]
-    // Pop the stack
-    ADDI SP, SP, #24
-    BR LR
+	ADD X1, X0, XZR    // Save the address of the last symbol
+	LDUR X19, [SP, #8] // Restore callee-saved X19 value from stack
+    LDUR LR, [FP, #0]  // Restore Link Register and old frame pointer from Stack
+    LDUR FP, [SP, #0]  // Restore Frame Pointer
+    ADDI SP, SP, #24   // Pop the stack
+    BR LR              // Return from function
 
 
 ////////////////////////
