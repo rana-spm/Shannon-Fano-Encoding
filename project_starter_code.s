@@ -321,4 +321,64 @@ Encode:
 	// x0: the address of (pointer to) the binary tree node 
 	// x2: symbols to encode
 
-	br lr
+	// Allocate space on the stack
+    SUBI SP, SP, #40
+    // Push old frame pointer onto the stack
+    STUR FP, [SP, #0]
+    // Set frame pointer
+    ADDI FP, SP, #32
+    // Push link register onto stack
+    STUR LR, [FP, #0]
+    // Save callee-saved registers X19, X20, X21, X22 on stack
+    STUR X19, [SP, #8]
+    STUR X20, [SP, #16]
+    STUR X21, [SP, #24]
+    STUR X22, [SP, #32]
+
+    LDUR X19, [X0, #16]  // Loading left node into register X19
+    LDUR X20, [X0, #24]  // Loading right node into register X20
+
+    SUB X21, X19, X20 // Checking if left node = right node
+    CBNZ X21, ifEncode // If left node =/= right node, jump to ifEncode
+    B endEncode          // If left node == right node, end the function
+
+ifEncode:
+    LDUR X21, [X19, #0]   // Loading (left node) = start
+    LDUR X22, [X19, #8]   // Loading (left node+1) = end
+
+    // Setting arguments for IsContain
+    ADD X4, X21, XZR  // start
+    ADD X5, X22, XZR  // end
+    ADD X6, X1, XZR   // symbol
+    BL IsContain
+    
+    // Result of IsContain is stored in X3
+
+    CBZ X3, PrintOne // If X3 == 0, jump to PrintOne, else PC = PC+4, and we go to PrintZero
+
+PrintZero:  
+    PUTINT XZR // Prints zero
+    ADD X0, X19, XZR  // Setting argument (node) as left node for Encode recursion
+    ADD X2, X2, XZR // Setting argument (symbol) for Encode recursion
+    BL Encode         // Encode recursion with left node and symbol as arguments
+    B endEncode       // End the function
+
+PrintOne:
+    ADDI X4, XZR, #1 // Saving 1 in X4 (to be printed)
+    PUTINT X4  // Prints 1
+    ADD X0, X20, XZR  // Setting argument (node) for Encode recursion
+    ADD X2, X2, XZR // Setting argument (symbol) for Encode recursion
+    BL Encode         // Encode recursion with right node and symbol as arguments
+
+endEncode:
+    // Restore callee-saved registers X19, X20, X21, X22 from stack
+    LDUR X19, [SP, #8]
+    LDUR X20, [SP, #16]
+    LDUR X21, [SP, #24]
+    LDUR X22, [SP, #32]
+    // Restore Link Register and old frame pointer from Stack
+    LDUR LR, [FP, #0]
+    LDUR FP, [SP, #0]
+    // Pop the stack
+    ADDI SP, SP, #40
+    BR LR
