@@ -321,7 +321,7 @@ Encode:
 	// x0: the address of (pointer to) the binary tree node 
 	// x2: symbols to encode
 
-	// Allocate space on the stack
+    // Allocate space on the stack
     SUBI SP, SP, #40
     // Push old frame pointer onto the stack
     STUR FP, [SP, #0]
