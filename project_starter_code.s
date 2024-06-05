@@ -13,7 +13,7 @@
 //                    	//
 //////////////////////////
 
-// Tests FindMidpoint (and FindTail)
+// Tests IsContain (and FindTail)
 main:	
     // Allocate space on the stack
     SUBI SP, SP, #40       // Increase stack space to accommodate additional variables
@@ -33,10 +33,10 @@ main:
     STUR x1, [SP, #16]     // Store original tail address on stack
     STUR x2, [SP, #24]     // Store original left sum on stack
     STUR x3, [SP, #32]     // Store original right sum on stack
-
-    // Call FindMidpoint
-    bl FindMidpoint
-    putint x4              // Print the address returned in x4 which points to the start of the right sub-array
+    ADDI X2, XZR, #9
+    // Call IsContain
+    bl IsContain
+    putint x3              
 
     // Restore the original values from the stack
     LDUR x0, [SP, #8]      // Restore head address
@@ -276,8 +276,39 @@ IsContain:
 
 	// output:
 	// x3: 1 if symbol is found, 0 otherwise
+    SUBI SP, SP, #32
+    // Push old frame pointer onto the stack
+    STUR FP, [SP, #0]
+    // Set frame pointer
+    ADDI FP, SP, #24
+    // Push link register onto stack
+    STUR LR, [FP, #0]
+	// Save callee-saved X19, X20 values on stack
+	STUR X19, [SP, #8]
+	STUR X20, [SP, #16]
+    ADDI X3, XZR, #0 // initialize x3 to 0
+    LDUR X20, [X1, #0] // load the last symbol of the sub-array
+repeatIsContain:
+    LDUR X19, [X0, #0] // load the current symbol
+    SUBS XZR, X19, X20 // check if head == tail
+    B.EQ endIsContain // if so, end the loop
+    SUBS XZR, X19, X2 // check if head == symbol
+    B.EQ returnTrue 
+	ADDI X0, X0, #16 // otherwise, move to the next symbol
+	B repeatIsContain
 
-	br lr
+returnTrue:
+    ADDI X3, XZR, #1 // set x3 to 1
+endIsContain:
+	// Restore callee-saved X19, X20 values from stack
+	LDUR X19, [SP, #8]
+	LDUR X20, [SP, #16]
+    // Restore Link Register and old frame pointer from Stack
+    LDUR LR, [FP, #0]
+    LDUR FP, [SP, #0]
+    // Pop the stack
+    ADDI SP, SP, #32
+    BR LR
 
 
 ////////////////////////
