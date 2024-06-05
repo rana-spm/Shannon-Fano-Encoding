@@ -203,7 +203,7 @@ Partition:
     STUR X1, [X2, #8]   // ∗(node + 1) ← end
 
     // Check if start == end
-    SUBS X19, X0, X1
+    SUB X19, X0, X1
     CBNZ X19, ElsePartition //If start =/= end, jump to ElsePartition
 
     // If condition: set left and right pointers to NULL (-1)
