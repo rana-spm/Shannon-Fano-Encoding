@@ -13,54 +13,27 @@
 //                    	//
 //////////////////////////
 
-// Tests FindMidpoint (and FindTail)
-// main:	
-//     // Allocate space on the stack
-//     SUBI SP, SP, #40       // Increase stack space to accommodate additional variables
-//     // Push old frame pointer onto the stack
-//     STUR FP, [SP, #0]
-//     // Set frame pointer
-//     ADDI FP, SP, #32
-//     // Push link register onto stack
-//     STUR LR, [FP, #0]
-
-//     // Load initial symbol array address
-//     ADDI X4, XZR, #56
-//     LDUR x0, [x4, #0]      // x0 is the head (first symbol)
-//     bl FindTail            // Call FindTail to get the last symbol address in x1
-//     ADDI X1, XZR, #32
-
-//     STUR x1, [SP, #16]     
-//     STUR x2, [SP, #24]     
-//     ADDI X2, XZR, #56
-//     // Call FindMidpoint
-//     bl Partition
-//     // Restore the original values from the stack
-//     LDUR x0, [SP, #8]      
-//     LDUR x1, [SP, #16]     
-//     LDUR x2, [SP, #24]     
-
-//     // Restore Link Register and old frame pointer from Stack
-//     LDUR lr, [fp, #0]
-//     LDUR fp, [sp, #0]
-//     // Pop the stack
-//     ADDI sp, sp, #40
-//     stop
-
-
-// main code for testing FindTail only
-main:	
-	LDA x4, symbol
-	LDUR x0, [x4, #0]
+main:	lda x4, symbol
+	ldur x0, [x4, #0]
 	bl FindTail
-	// Restore Link Register and old frame pointer from Stack
-	putint X1 // print the tail address
-    LDUR X2, [X0, #8]
-    LDUR X3, [X1, #8]
-    BL FindMidpoint
-    putint X4
-	STOP
+	addi x2, x1, #24
+	stur x2, [sp, #0]
+	bl Partition
+	ldur x0, [sp, #0]
+	lda x5, encode
+	ldur x1, [x5, #0]
+CheckSymbol:
+	ldur x2, [x1, #0]
+	subs xzr, x2, xzr
+	b.ge KeepEncode
+	stop
 
+KeepEncode:
+	stur x1, [sp, #0]
+	bl Encode
+	ldur x1, [sp, #0]
+	addi x1, x1, #8
+	b CheckSymbol
 
 	
 ////////////////////////
@@ -78,13 +51,13 @@ FindTail:
     STUR LR, [SP, #8]  // Push link register onto stack
     ADDI FP, SP, #24   // Set frame pointer
     
-    STUR X19, [SP, #16] // Save callee-saved X19 value on stack
+    STUR X19, [SP, #16] // Save X19 value on stack
     STUR X0, [SP, #24] // Save the address of the first symbol on stack
 
 	LDUR X19, [X0, #16]  // store the value of the next symbol
 	ADDI X19, X19, #1    // check if the next symbol is -1
-	CBNZ X19, repeat // if so, end the loop
-    ADD X1, X0, XZR    // Save the address of the last symbol
+	CBNZ X19, repeat     // if so, end the loop
+    ADD X1, X0, XZR      // Save the address of the last symbol
     B endFindTail
 repeat:
 	ADDI X0, X0, #16     // otherwise, move to the next symbol
@@ -94,10 +67,10 @@ endFindTail:
 	
     LDUR X0, [SP, #24]  // Restore the address of the first symbol
 	LDUR X19, [SP, #16] // Restore callee-saved X19 value from stack
-    LDUR FP, [SP, #0]  // Restore Frame Pointer
-    LDUR LR, [SP, #8]  // Restore Link Register and old frame pointer from Stack
-    ADDI SP, SP, #32   // Pop the stack
-    BR LR              // Return from function
+    LDUR FP, [SP, #0]   // Restore Frame Pointer
+    LDUR LR, [SP, #8]   // Restore Link Register and old frame pointer from Stack
+    ADDI SP, SP, #32    // Pop the stack
+    BR LR               // Return from function
 
 
 ////////////////////////
@@ -119,12 +92,12 @@ FindMidpoint:
     STUR LR, [SP, #8]  // Push link register onto stack
     ADDI FP, SP, #56   // Set frame pointer
     
-    STUR X19, [SP, #16] // Save callee-saved X19 value on stack
-	STUR X20, [SP, #24]
-    STUR X0, [SP, #32] // Save the address of the first symbol on stack
-    STUR X1, [SP, #40] // Save the address of the last symbol on stack
-    STUR X2, [SP, #48] // Save the sum of the frequency of the left sub-array on stack
-    STUR X3, [SP, #56] // Save the sum of the frequency of the right sub-array on stack
+    STUR X19, [SP, #16] // Save X19 value on stack
+	STUR X20, [SP, #24] // Save X20 value on stack
+    STUR X0, [SP, #32]  // Save the address of the first symbol on stack
+    STUR X1, [SP, #40]  // Save the address of the last symbol on stack
+    STUR X2, [SP, #48]  // Save the sum of the frequency of the left sub-array on stack
+    STUR X3, [SP, #56]  // Save the sum of the frequency of the right sub-array on stack
 
 	ADDI X19, X0, #16 // check if head + 2 == tail
 	SUBS XZR, X19, X1
@@ -172,16 +145,17 @@ Partition:
 	// x2: address of the first attribute of the current binary tree node
 	
     // Allocate space on the stack
-    SUBI SP, SP, #56
+    SUBI SP, SP, #64
     STUR FP, [SP, #0]  // Push old frame pointer onto the stack
     STUR LR, [SP, #8]  // Push link register onto stack
-    ADDI FP, SP, #48   // Set frame pointer
+    ADDI FP, SP, #56   // Set frame pointer
     
     STUR X19, [SP, #16] // Save callee-saved X19 value on stack
     STUR X20, [SP, #24]
     STUR X0, [SP, #32] // Save the address of the first symbol on stack
     STUR X1, [SP, #40] // Save the address of the last symbol on stack
     STUR X2, [SP, #48] // Save the address of the first attribute of the current binary tree node on stack
+
     // Store start ptr and end ptr in the node
     STUR X0, [X2, #0]   // ∗node ← start
     STUR X1, [X2, #8]   // ∗(node + 1) ← end
@@ -198,21 +172,12 @@ Partition:
 
 ElsePartition:
     // Calculate left_sum and right_sum
-    LDUR X19, [X0, #8]  // left_sum = *(start + 1)
-    LDUR X20, [X1, #8]  // right_sum = *(end + 1)
-    STUR x0, [SP, #24]   
-    STUR x1, [SP, #32]    
-    STUR x2, [SP, #40]     
-    STUR x3, [SP, #48]         
-    // Setting arguments and calling FindMidpoint
-    ADD X2, X19, XZR  // left_sum  
-    ADD X3, X20, XZR  // right_sum 
+    LDUR X2, [X0, #8]  // left_sum = *(start + 1)
+    LDUR X3, [X1, #8]  // right_sum = *(end + 1)  
+    // Call MidPoint with X0 = start, X1 = end, X2 = left_sum, X3 = right_sum
     BL FindMidpoint    // Result (midpoint value) stored in X4 
-    // Restore the original values from the stack
-    LDUR x0, [SP, #24]     
-    LDUR x1, [SP, #32]     
-    LDUR x2, [SP, #40]     
-    LDUR x3, [SP, #48]     
+    STUR X4, [SP, #56]  // Save the midpoint value on stack
+    LDUR X2, [SP, #48]  // Restore the address of the first attribute of the current binary tree node
 
     SUB X20, X4, X0  // Calculating (midpoint - start)
     SUBI X20, X20, #8 // offset = (midpoint - start) – 1
@@ -225,33 +190,20 @@ ElsePartition:
     // Store left and right node pointers
     STUR X19, [X2, #16]  // ∗(node + 2) ← left node
     STUR X20, [X2, #24]  // ∗(node + 3) ← right nodes
-    
-    STUR x0, [SP, #24]   
-    STUR x1, [SP, #32]    
-    STUR x2, [SP, #40]
-    STUR x3, [SP, #48]
-    STUR x4, [SP, #56]
+
     // Setting arguments for first recursive call
     SUBI X1, X4, #16     // midpoint - 2
-    ADD X2, X19, XZR    // left_node !!!!!!!!!!!!!!!!!!!!!!
+    ADD X2, X19, XZR    // left_node
+    // Call Partition with X0 = start, X1 = midpoint - 2, X2 = left_node
     BL Partition	// first recursive call
-    LDUR x0, [SP, #24]     
-    LDUR x1, [SP, #32]     
-    LDUR x2, [SP, #40]     
-    LDUR x3, [SP, #48]
-    LDUR x4, [SP, #56]
-
-    STUR x0, [SP, #24]   
-    STUR x1, [SP, #32]    
-    STUR x2, [SP, #40]
     
+    LDUR X4, [SP, #56]  // Restore the midpoint value from stack
     // Setting arguments for second recursive call
     ADD X0, X4, XZR      // midpoint
+    LDUR X1, [SP, #40]    // end
     ADD X2, X20, XZR     // right_node
+    // Call Partition with X0 = midpoint, X1 = end, X2 = right_node
     BL Partition	 // second recursive call
-    LDUR x0, [SP, #24]     
-    LDUR x1, [SP, #32]     
-    LDUR x2, [SP, #40]     
 
 endPartition:
     // Restore callee-saved registers from stack
@@ -263,7 +215,7 @@ endPartition:
     // Restore Link Register and old frame pointer from Stack
     LDUR FP, [SP, #0]  // Restore Frame Pointer
     LDUR LR, [SP, #8]  // Restore Link Register and old frame pointer from Stack
-    ADDI SP, SP, #56   // Pop the stack
+    ADDI SP, SP, #64   // Pop the stack
     BR LR
 	
 ////////////////////////
@@ -279,24 +231,25 @@ IsContain:
 
 	// output:
 	// x3: 1 if symbol is found, 0 otherwise
-    SUBI SP, SP, #32
-    // Push old frame pointer onto the stack
-    STUR FP, [SP, #0]
-    // Set frame pointer
-    ADDI FP, SP, #24
-    // Push link register onto stack
-    STUR LR, [FP, #0]
+    SUBI SP, SP, #56
+    STUR FP, [SP, #0]  // Push old frame pointer onto the stack
+    STUR LR, [SP, #8]  // Push link register onto stack
+    ADDI FP, SP, #48   // Set frame pointer
 	// Save callee-saved X19, X20 values on stack
-	STUR X19, [SP, #8]
-	STUR X20, [SP, #16]
+	STUR X19, [SP, #16]
+	STUR X20, [SP, #24]
+    STUR X0, [SP, #32] // Save the address of the first symbol on stack
+    STUR X1, [SP, #40] // Save the address of the last symbol on stack
+    STUR X2, [SP, #48] // Save the symbol to look for on stack
+
     ADDI X3, XZR, #0 // initialize x3 to 0
     LDUR X20, [X1, #0] // load the last symbol of the sub-array
 repeatIsContain:
     LDUR X19, [X0, #0] // load the current symbol
+    SUBS XZR, X19, X2 // check if head == symbol
+    B.EQ returnTrue     
     SUBS XZR, X19, X20 // check if head == tail
     B.EQ endIsContain // if so, end the loop
-    SUBS XZR, X19, X2 // check if head == symbol
-    B.EQ returnTrue 
 	ADDI X0, X0, #16 // otherwise, move to the next symbol
 	B repeatIsContain
 
@@ -304,13 +257,15 @@ returnTrue:
     ADDI X3, XZR, #1 // set x3 to 1
 endIsContain:
 	// Restore callee-saved X19, X20 values from stack
-	LDUR X19, [SP, #8]
-	LDUR X20, [SP, #16]
+    LDUR X2, [SP, #48]
+    LDUR X1, [SP, #40]
+    LDUR X0, [SP, #32]
+	LDUR X20, [SP, #24]
+	LDUR X19, [SP, #16]
     // Restore Link Register and old frame pointer from Stack
-    LDUR LR, [FP, #0]
-    LDUR FP, [SP, #0]
-    // Pop the stack
-    ADDI SP, SP, #32
+    LDUR FP, [SP, #0]  // Restore Frame Pointer
+    LDUR LR, [SP, #8]  // Restore Link Register and old frame pointer from Stack
+    ADDI SP, SP, #56   // Pop the stack
     BR LR
 
 
@@ -325,63 +280,53 @@ Encode:
 	// x2: symbols to encode
 
     // Allocate space on the stack
-    SUBI SP, SP, #40
-    // Push old frame pointer onto the stack
-    STUR FP, [SP, #0]
-    // Set frame pointer
-    ADDI FP, SP, #32
-    // Push link register onto stack
-    STUR LR, [FP, #0]
-    // Save callee-saved registers X19, X20, X21, X22 on stack
-    STUR X19, [SP, #8]
-    STUR X20, [SP, #16]
-    STUR X21, [SP, #24]
-    STUR X22, [SP, #32]
-
+    SUBI SP, SP, #48
+    STUR FP, [SP, #0]  // Push old frame pointer onto the stack
+    STUR LR, [SP, #8]  // Push link register onto stack
+    ADDI FP, SP, #40   // Set frame pointer
+    // Save callee-saved registers X19, X20 on stack
+    STUR X19, [SP, #16]
+    STUR X20, [SP, #24]
+    STUR X0, [SP, #32] // Save the address of the binary tree node on stack
+    STUR X2, [SP, #40] // Save the address of the symbols to encode on stack    
+    
     LDUR X19, [X0, #16]  // Loading left node into register X19
     LDUR X20, [X0, #24]  // Loading right node into register X20
 
-    SUB X21, X19, X20 // Checking if left node = right node
-    CBNZ X21, ifEncode // If left node =/= right node, jump to ifEncode
-    B endEncode   // If left node == right node, end the function
+    SUBS XZR, X19, X20 // Checking if left node = right node
+    B.EQ endEncode   // If left node == right node, end the function
 
 ifEncode:
-    LDUR X21, [X19, #0]   // Loading (left node) = start
-    LDUR X22, [X19, #8]   // Loading (left node+1) = end
-
-    // Setting arguments for IsContain
-    ADD X4, X21, XZR  // start
-    ADD X5, X22, XZR  // end
-    ADD X6, X1, XZR   // symbol
-    BL IsContain
-    
-    // Result of IsContain is stored in X3
+    LDUR X0, [X19, #0]   // Loading *(left node) = start
+    LDUR X1, [X19, #8]   // Loading *(left node+1) = end
+    // Call IsContain with X0 = *left_node, X1 = *(left_node + 1), X2 = symbol
+    BL IsContain    // Result of IsContain is stored in X3
 
     CBZ X3, PrintOne // If X3 == 0, jump to PrintOne, else PC = PC+4, and we go to PrintZero
 
 PrintZero:  
     PUTINT XZR // Prints zero
     ADD X0, X19, XZR  // Setting argument (node) as left node for Encode recursion
-    ADD X2, X2, XZR // Setting argument (symbol) for Encode recursion
+    // Call Encode with X0 = left_node, X2 = symbol
     BL Encode   // Encode recursion with left node and symbol as arguments
     B endEncode   // End the function
 
 PrintOne:
-    ADDI X4, XZR, #1 // Saving 1 in X4 (to be printed)
-    PUTINT X4  // Prints 1
+    ADDI X19, XZR, #1 // Saving 1 in X4 (to be printed)
+    PUTINT X19  // Prints 1
     ADD X0, X20, XZR  // Setting argument (node) for Encode recursion
-    ADD X2, X2, XZR // Setting argument (symbol) for Encode recursion
+    // Call Encode with X0 = right_node, X2 = symbol
     BL Encode   // Encode recursion with right node and symbol as arguments
 
 endEncode:
-    // Restore callee-saved registers X19, X20, X21, X22 from stack
-    LDUR X19, [SP, #8]
-    LDUR X20, [SP, #16]
-    LDUR X21, [SP, #24]
-    LDUR X22, [SP, #32]
+    // Restore callee-saved registers X19, X20 from stack
+    LDUR X2, [SP, #40]
+    LDUR X0, [SP, #32]
+    LDUR X20, [SP, #24]
+    LDUR X19, [SP, #16] 
+    
     // Restore Link Register and old frame pointer from Stack
-    LDUR LR, [FP, #0]
-    LDUR FP, [SP, #0]
-    // Pop the stack
-    ADDI SP, SP, #40
+    LDUR FP, [SP, #0]  // Restore Frame Pointer
+    LDUR LR, [SP, #8]  // Restore Link Register and old frame pointer from Stack
+    ADDI SP, SP, #48   // Pop the stack
     BR LR
